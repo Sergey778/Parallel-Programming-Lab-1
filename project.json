@@ -1,0 +1,29 @@
+{
+  "version": "1.0.0-*",
+  "buildOptions": {
+    "debugType": "portable",
+    "emitEntryPoint": true
+  },
+  "dependencies": {
+      "BenchmarkDotNet": {
+        "version" : "0.9.9"
+      },
+      "BenchmarkDotNet.Core" : {
+        "version": "0.9.9"
+      }
+  },
+  "runtimes": {
+    "osx.10.11-x64" : {}
+  },
+  "frameworks": {
+    "netcoreapp1.0": {
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "type": "platform",
+          "version": "1.0.1"
+        }
+      },
+      "imports": "dnxcore50"
+    }
+  }
+}
