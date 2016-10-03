@@ -10,46 +10,47 @@ namespace Parallel_Programming_Lab_1
     public class Program
     {
 
-        private static IEnumerable<int> BaseTask(IEnumerable<int> source, int[] result, int from, int to, Func<int, int> action)
+        private static IEnumerable<int> BaseTask(IEnumerable<int> source, 
+                                                 int[] result, 
+                                                 int from, 
+                                                 int to, 
+                                                 Func<IEnumerable<int>, int, int> action,
+                                                 int step = 1)
         {
             var end = to < result.Length ? to : result.Length;
-            for (var i = from; i < end; i++)
+            for (var i = from; i < end; i += step)
             {
-                result[i] = action(source.ElementAt(i));
+                result[i] = action(source, i);
             }
             return result;
         }
 
-        private static IEnumerable<int> HardTask(IEnumerable<int> source, int[] result, int from, int to, Func<int, int> action) 
+        private static IEnumerable<int> SimpleTask(IEnumerable<int> source, int[] result, int from, int to, Func<int, int> action, int step = 1) 
         {
-            var end = to < result.Length ? to : result.Length;
-            for (var i = from; i < end; i++) 
+            Func<IEnumerable<int>, int, int> taskAction = (list, i) =>
             {
-                var limit = (int)(Math.Log10(i) * 100);
-                for (var j = 0; j < limit; j++)
-                {
-                    result[i] += action(source.ElementAt(i));
-                }
-            }
-            return result;
+                return action(list.ElementAt(i));
+            };
+            return BaseTask(source, result, from, to, taskAction, step);
         }
 
-        private static IEnumerable<int> HardRingTask(IEnumerable<int> source, int[] result, int from, int to, int step, Func<int, int> action) 
+        private static IEnumerable<int> HardTask(IEnumerable<int> source, int[] result, int from, int to, Func<int, int> action, int step = 1) 
         {
-            var end = to < result.Length ? to : result.Length;
-            for (var i = from; i < end; i += step) 
+            Func<IEnumerable<int>, int, int> taskAction = (list, i) =>
             {
+                var localResult = 0;
                 var limit = (int)(Math.Log10(i) * 100);
                 for (var j = 0; j < limit; j++) 
                 {
-                    result[i] += action(source.ElementAt(i));
+                    localResult += action(list.ElementAt(i));
                 }
-            }
-            return result;
+                return localResult;
+            };
+            return BaseTask(source, result, from, to, taskAction, step);
         }
 
         public static IEnumerable<int> SeqTask(IEnumerable<int> list, Func<int, int> action) =>
-            BaseTask(list, new int[list.Count()], 0, list.Count(), action);
+            SimpleTask(list, new int[list.Count()], 0, list.Count(), action);
 
         public static IEnumerable<int> SeqHardTask(IEnumerable<int> list, Func<int, int> action) =>
             HardTask(list, new int[list.Count()], 0, list.Count(), action);
@@ -65,7 +66,7 @@ namespace Parallel_Programming_Lab_1
                 threads[i] = new Thread((object a) =>
                 {
                     var threadNumber = (int) a;
-                    BaseTask(list, result, threadNumber * objectsPerThread, (threadNumber + 1) * objectsPerThread, action);
+                    SimpleTask(list, result, threadNumber * objectsPerThread, (threadNumber + 1) * objectsPerThread, action);
                 });
                 threads[i].Start(i);
             }
@@ -104,7 +105,7 @@ namespace Parallel_Programming_Lab_1
             {
                 threads[i] = new Thread((object a) => {
                     var threadNumber = (int) a;
-                    HardRingTask(list, result, threadNumber, list.Count(), processorCount, action);
+                    HardTask(list, result, threadNumber, list.Count(), action, processorCount);
                 });
                 threads[i].Start(i);
             }
